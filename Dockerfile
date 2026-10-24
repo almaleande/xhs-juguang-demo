@@ -9,6 +9,5 @@ COPY . /app
 
 EXPOSE 8867
 
-# Render 会注入 PORT 环境变量；通过 KB_PORT 传给服务
-ENV KB_PORT=8867
-CMD ["sh", "-c", "python 看板服务.py ${KB_PORT:-8867} 5"]
+# Render 会注入 PORT 环境变量，由 shell 展开直接传给服务（argv 优先）
+CMD ["sh", "-c", "python 看板服务.py ${PORT:-8867} 5"]
