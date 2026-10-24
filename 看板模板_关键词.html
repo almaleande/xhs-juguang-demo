@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>夏天 · 小红书关键词看板</title>
+<style>
+__SHARED_CSS__
+.pgtab{display:inline-flex;gap:2px;background:#EFEDE8;border-radius:10px;padding:3px;flex:none}
+.pgtab .pt{font-size:12.5px;padding:5px 13px;border-radius:8px;color:var(--ink2);text-decoration:none;white-space:nowrap}
+.pgtab .pt:hover{color:var(--gold-deep)}
+.pgtab .pt.active{background:#fff;color:var(--gold-deep);font-weight:600;box-shadow:0 1px 3px rgba(23,26,32,.10)}
+
+/* ===== 关键词页专用 ===== */
+.loc-good{color:var(--green);font-weight:600}
+
+/* 词类标签 */
+.kwt{display:inline-block;font-size:10.5px;line-height:1.5;padding:1px 6px;border-radius:5px;
+  margin-left:6px;vertical-align:middle;white-space:nowrap;background:#F1EFE8;color:#5F5E5A}
+.kwt-brand{background:#FBEAF0;color:#993556}
+.kwt-comp{background:#FCEBEB;color:#A32D2D}
+.kwt-offcity{background:#FCEBEB;color:#A32D2D}
+.kwt-style{background:#E1F5EE;color:#0F6E56}
+.kwt-city{background:#E6F1FB;color:#185FA5}
+.kwt-ask{background:#FAEEDA;color:#854F0B}
+.kwt-auto{background:#FBF6EA;color:#8A6D22}
+.kwt-out{background:#F1EFE8;color:#5F5E5A}
+.kwt-misc{background:#EEEDFE;color:#534AB7}
+.kwt-cat{background:#EAF3DE;color:#3B6D11}
+.kwt-people{background:#EEEDFE;color:#534AB7}
+.kwt-irrel{background:#F1EFE8;color:#888780}
+.kwt-vague{background:#F1EFE8;color:#888780}
+.kwt-lvl{border:1px solid var(--line);background:#fff;color:var(--ink3);font-weight:600;margin-left:4px}
+
+/* 效率徽标（阈值由 KWSNAP.eff 注入，与素材看板同源） */
+.kw-eff{display:inline-block;font-size:11.5px;line-height:1.6;padding:1px 9px;border-radius:7px;
+  white-space:nowrap;font-weight:600}
+.kw-eff.g{background:#E1F5EE;color:#0F6E56}
+.kw-eff.y{background:#FAEEDA;color:#854F0B}
+.kw-eff.r{background:#FCEBEB;color:#A32D2D}
+.kw-eff.n{background:#F1EFE8;color:#888780}
+
+/* ---- 筛选条（素材看板同款结构，并入工具栏） ---- */
+.tb-main{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;min-width:0}
+.tb-main .dimseg{flex:none}
+.tb-chips{display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;min-width:0;
+  padding-top:9px;border-top:1px dashed var(--line)}
+.dimchips{display:flex;flex-wrap:wrap;gap:5px;align-items:center;flex:1 1 240px;min-width:160px}
+.dimchips .cbtn{flex:0 0 auto;white-space:nowrap;max-width:210px;overflow:hidden;
+  text-overflow:ellipsis;display:inline-flex}
+.drill-search{flex:1 1 100%;margin-bottom:2px}
+.drill-search input{width:100%;box-sizing:border-box;font-size:12.5px;padding:6px 11px;border:1px solid var(--line);border-radius:8px;background:#FAF9F6;color:var(--ink);font-family:inherit;transition:.15s}
+.drill-search input:focus{outline:none;border-color:var(--gold);background:#fff}
+.drill-search input::placeholder{color:var(--ink3)}
+.cbtn-more{color:var(--gold-deep);border-style:dashed;border-color:#E5D8BC;background:#FBF7EE}
+.cbtn-more:hover{background:#F5EFE2}
+.drill-rest{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}
+.drill-rest[hidden]{display:none}
+/* ---- 主表：列宽自适应 + 关键词一行呈现（超宽走整表横向滚动，绝不折行） ---- */
+#kwTable{table-layout:auto;min-width:1320px}
+#kwTable th,#kwTable td{white-space:nowrap}
+#kwTable td,#kwTable th{padding:9px 12px}
+#kwTable td.kwl{min-width:180px}
+#kwTable .kwn{font-size:13.5px;color:var(--ink);font-weight:500;
+  white-space:nowrap;word-break:keep-all;overflow-wrap:normal}
+#kwTable td.kwo{font-size:12px;color:var(--ink2)}
+#kwTable .kwa{color:var(--gold-deep);font-weight:600}
+#kwTable .kwc{color:var(--ink3);font-size:11px;margin-left:6px}
+#kwTable td.num,#kwTable th.num{font-variant-numeric:tabular-nums}
+#kwTable .tagcell{min-width:112px}
+
+#wastekwTable{table-layout:auto;min-width:960px}
+#wastekwTable th,#wastekwTable td{white-space:nowrap}
+#wastekwTable td,#wastekwTable th{padding:9px 12px}
+#wastekwTable .kwn{font-size:13.5px;color:var(--ink);font-weight:500;white-space:nowrap}
+
+/* 表格容器横向滚动（共享 CSS 的 .table-wrap 是 overflow:hidden，会裁掉宽表） */
+#sec-kw .table-wrap,#sec-wastekw .table-wrap{overflow-x:auto;overflow-y:hidden;
+  -webkit-overflow-scrolling:touch}
+#sec-kw .table-wrap::-webkit-scrollbar,#sec-wastekw .table-wrap::-webkit-scrollbar{height:9px}
+#sec-kw .table-wrap::-webkit-scrollbar-thumb,
+#sec-wastekw .table-wrap::-webkit-scrollbar-thumb{background:#DDD6C8;border-radius:5px}
+#sec-kw .table-wrap::-webkit-scrollbar-track,
+#sec-wastekw .table-wrap::-webkit-scrollbar-track{background:#F5F3EE}
+
+/* 合计行 */
+.total-row{background:#FCFAF5}
+.total-row td{border-top:1.5px solid var(--line);font-weight:600;color:var(--ink)}
+.total-row .t-label{color:var(--ink2);font-weight:600;font-size:12.5px}
+
+/* 词类分布 */
+.cls-wrap{padding:4px 2px 2px}
+.clsrow{display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line)}
+.clsrow:last-child{border-bottom:none}
+.clsrow .clsn{width:96px;flex:0 0 auto;font-size:12.5px;color:var(--ink)}
+.clsrow .clsbar{flex:1 1 auto;height:9px;background:#F1EFE8;border-radius:5px;overflow:hidden;min-width:60px}
+.clsrow .clsbar i{display:block;height:100%;border-radius:5px;background:var(--gold)}
+.clsrow .clsv{width:96px;flex:0 0 auto;text-align:right;font-size:12.5px;color:var(--ink);
+  font-variant-numeric:tabular-nums;font-weight:600}
+.clsrow .clsk{width:104px;flex:0 0 auto;text-align:right;font-size:11.5px;color:var(--ink3);
+  font-variant-numeric:tabular-nums}
+.clsrow .clsl{width:120px;flex:0 0 auto;text-align:right;font-size:11.5px;color:var(--ink3);
+  font-variant-numeric:tabular-nums}
+.kwnote{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--ink3);
+  padding:10px 2px 2px}
+.kwnote b{color:var(--ink2);font-weight:600}
+
+/* 表格加载中 */
+.tbl-loading{padding:30px;text-align:center;color:var(--ink3);font-size:13px}
+
+/* 紧凑模式 */
+body.dense #kwTable td,body.dense #kwTable th{padding:5px 12px}
+body.dense #wastekwTable td,body.dense #wastekwTable th{padding:5px 12px}
+body.dense #kwTable .kwt{display:none}
+
+@media (max-width:900px){
+  /* 窄屏保持横向滚动，词不折行 */
+  #kwTable{min-width:1180px}
+  #wastekwTable{min-width:880px}
+  .clsrow .clsn{width:66px}
+  .clsrow .clsk{display:none}
+  .clsrow .clsl{width:96px}
+  .dimchips{flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;
+    -webkit-overflow-scrolling:touch}
+  .dimchips::-webkit-scrollbar{display:none}
+  .cbtn{min-height:32px}
+}
+__TOP_STABLE_CSS__
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="hero-row1">
+      <div class="brand">
+        <div class="logo">夏</div>
+        <div>
+          <h1><span class="b-name">夏天</span><span class="b-sep">·</span><span class="b-desc">小红书聚光投放看板</span></h1>
+        </div>
+      </div>
+      <div class="hero-side">
+        <div class="pgtab"><a class="pt" href="/" title="素材投放总览">投放总览</a><a class="pt active" href="/keyword" title="关键词（搜索词）看板">关键词</a><a class="pt" href="/diag" title="计划级投放诊断">投放诊断</a></div>
+        <button class="btn" id="btnAuth">授权管理<span class="bdot" id="authBdot">__PENDING_N__</span></button>
+        <div class="refreshbar">
+          <span class="dot" id="rfDot"></span>
+          <span class="rf-txt">聚光开放平台 · 最后刷新 <b id="rfLast">__LAST_REFRESH__</b></span>
+          <button class="btn" id="btnRefresh">↻ 刷新</button>
+        </div>
+      </div>
+    </div>
+    <div class="kpis" id="kpiRow"></div>
+  </header>
+
+  <nav class="secnav" id="secNav">
+    <a class="nav-item active" href="#sec-kw" data-target="sec-kw">关键词榜</a>
+    <a class="nav-item" href="#sec-wastekw" data-target="sec-wastekw">高耗无开口词</a>
+    <a class="nav-item" href="#sec-cls" data-target="sec-cls">词类分布</a>
+    <div class="rtabs nav-rtabs" id="navRtabs">
+      __RANGES_HTML__
+      <button class="rtab rtab-custom" id="btnCustomRange" type="button" title="自定义起止日期">自定义▾</button>
+      <div class="rangepop" id="rangePop" hidden>
+        <div class="rangepop-title">自定义区间</div>
+        <div class="rangepop-quick">
+          <button class="qchip" data-d="7" type="button">近7日</button>
+          <button class="qchip" data-d="30" type="button">近30日</button>
+          <button class="qchip" data-d="90" type="button">近90日</button>
+          <button class="qchip" data-m="this" type="button">本月</button>
+          <button class="qchip" data-m="last" type="button">上月</button>
+        </div>
+        <div class="rangepop-row">
+          <label>起<input type="date" id="rangeStart" class="datein" value="__RANGE_START__"></label>
+          <span class="crange-sep">→</span>
+          <label>止<input type="date" id="rangeEnd" class="datein" value="__RANGE_END__"></label>
+        </div>
+        <div class="rangepop-actions">
+          <span class="rangepop-hint" id="rangeHint"></span>
+          <button class="btn-ghost" id="btnRangeClear" type="button">重置</button>
+          <button class="btn-apply" id="btnApplyRange" type="button">应用</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="card" id="sec-kw">
+    <h2>关键词获客榜 <span class="chip" id="kwChip">__KW_RANGE_LABEL__</span></h2>
+
+    <div class="toolbar">
+      <div class="tb-main">
+        <input class="search" id="kwSearch" placeholder="搜索关键词 / 账号 / 城市 / 词类…">
+        <span class="dimtip">筛选</span>
+        <div class="dimseg" id="fDimseg">
+          <button class="dbtn active" data-fdim="city">城市</button>
+          <button class="dbtn" data-fdim="adv">投放账号</button>
+          <button class="dbtn" data-fdim="owner">小红书号</button>
+        </div>
+        <span class="count" id="kwCount">—</span>
+        <span class="spacer"></span>
+        <button class="btn" id="btnExcludeAuto" title="「智能搭建词包」是平台自动词包，不是真实查询词">含自动词包</button>
+        <button class="btn" id="btnOnlyOpen">只看有开口</button>
+        <button class="btn" id="btnOnlyLead">只看有留资</button>
+        <button class="btn" id="btnDense">≡ 紧凑</button>
+      </div>
+      <div class="tb-chips">
+        <div class="dimchips" data-fdim="city" id="fchips-city"></div>
+        <div class="dimchips" data-fdim="adv" id="fchips-adv" style="display:none"></div>
+        <div class="dimchips" data-fdim="owner" id="fchips-owner" style="display:none"></div>
+</div>
+    </div>
+
+    <div class="table-wrap"><table id="kwTable"></table></div>
+    <div class="pager" id="kwPager"></div>
+    <div class="foot-note" id="kwNote"></div>
+  </div>
+
+  <div class="card" id="sec-wastekw">
+    <h2>高耗无开口词 <span class="chip" id="wasteChip">—</span></h2>
+    <div class="hint">消耗 ≥ ¥30 且区间内零私信咨询、零开口（没聊起来）的词 · 优先排查对象 · 每页 20</div>
+    <div class="table-wrap"><table id="wastekwTable"></table></div>
+    <div class="pager" id="wastekwPager"></div>
+  </div>
+
+  <div class="card" id="sec-cls">
+    <h2>词类分布</h2>
+    <div class="hint">按「夏天_v6 推荐词库」（7173 词）的意图分类打标；库外词 = 不在推荐词库内的投放词</div>
+    <div class="cls-wrap" id="clsList"></div>
+    <div class="kwnote" id="clsNote"></div>
+  </div>
+
+  <div class="foot-note" id="footNote">__FOOTNOTE__</div>
+</div>
+
+<div class="modal" id="modalAuth">
+  <div class="mbox">
+    <button class="modal-x" id="btnCloseAuth" title="关闭">×</button>
+    <h3>授权管理</h3>
+    <div class="msub">小红书聚光的 auth_code 是<b>一次性</b>的、几分钟就失效，拿到要立刻提交。<br>流程：点「打开授权页」→ 用对应小红书账号登录并确认 → 复制跳转后的地址栏 → 粘进来提交。换 token、验证、入库全自动。</div>
+
+    <h4>账号授权总览 <span class="chip" id="accSum">__AUTH_SUM__</span></h4>
+    <div class="acc-list" id="accList">__AUTH_ROWS__</div>
+
+    <h4>提交授权</h4>
+    <div class="auth-steps">
+      <b>1</b>　点下方「打开授权页」<br>
+      <b>2</b>　用对应小红书账号登录（短信验证码）→ 点「确认授权」<br>
+      <b>3</b>　页面跳到 httpbin.org 后，<b>立刻 Ctrl+A 全选地址栏并复制</b><br>
+      <b>4</b>　粘贴到下面，点「提交授权」
+    </div>
+    <div class="auth-row">
+      <a class="auth-link" id="authLink" href="__AUTH_URL__" target="_blank" rel="noopener">打开授权页 ↗</a>
+      <button class="btn" id="btnCopyAuth">复制授权链接</button>
+    </div>
+    <textarea id="authInput" class="auth-input" placeholder="把整条回调地址粘进来即可（形如 https://httpbin.org/get?auth_code=xxx&state=abcd），也可以只粘 auth_code"></textarea>
+    <div class="auth-row" style="margin-top:12px;margin-bottom:0">
+      <button class="btn-primary" id="btnSubmitAuth">提交授权</button>
+      <button class="btn-ghost" id="btnCloseAuth2">关闭</button>
+    </div>
+    <div class="auth-msg" id="authMsg"></div>
+  </div>
+</div>
+
+<script>
+__TOP_KPI_JS__
+
+// ===== 数据（Python 注入；筛选后会整体替换）=====
+var KWSNAP = __KWSNAP__;
+
+// ===== 基础工具 =====
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function num(v){ return (v==null||v==="") ? "—" : Number(v).toLocaleString("en-US"); }
+function money(v){ return "¥" + Math.round(Number(v)||0).toLocaleString("en-US"); }
+function money2(v){ return "¥" + (Number(v)||0).toFixed(2); }
+function short(s, n){ s = String(s==null?"":s); return s.length > n ? s.slice(0, n) + "…" : s; }
+
+var TAG_CLS = {
+  "品牌词":"brand","竞品词":"comp","风格词":"style","城市词":"city","咨询词":"ask",
+  "自动词包":"auto","库外词":"out","非负责城市":"offcity","宽泛相关":"vague",
+  "物品售后":"misc","关联服务":"misc","婚礼品类":"cat","品类词":"cat",
+  "完全无关":"irrel","人群词":"people","明星热点":"people","其他":"out"
+};
+function tagChip(r){
+  if(r.pseudo) return '<span class="kwt kwt-auto">自动词包</span>';
+  if(!r.tag) return '<span class="kwt kwt-out">未分类</span>';
+  var k = TAG_CLS[r.tag] || "out";
+  var t = "";
+  if(r.lib_idx || r.lib_bid){ t = ' title="推荐词库：月搜索指数 '+r.lib_idx+' · 市场出价 ¥'+r.lib_bid+'"'; }
+  return '<span class="kwt kwt-'+k+'"'+t+'>'+esc(r.tag)+'</span>';
+}
+
+// ===== 效率徽标（阈值来自 KWSNAP.eff，与素材看板同一组数字）=====
+function effOf(r){
+  var E = KWSNAP.eff || {good:100, ok:250, msg:120, waste:30};
+  if(r.ml > 0 && r.mlc != null){
+    if(r.mlc <= E.good) return ["优秀","g"];
+    if(r.mlc <= E.ok)   return ["合格","y"];
+    return ["成本偏高","r"];
+  }
+  if(r.open > 0){
+    return (r.open_c != null && r.open_c <= E.msg) ? ["有开口","g"] : ["开口偏贵","y"];
+  }
+  if(r.fee >= E.waste) return ["高耗无开口","r"];
+  return ["—","n"];
+}
+
+// ===== 单元格渲染 =====
+function feeTd(r){ return '<td class="num fee">'+money(r.fee)+'</td>'; }
+function impTd(r){ return '<td class="num">'+num(r.imp)+'</td>'; }
+function clkTd(r){ return '<td class="num">'+num(r.clk)+'</td>'; }
+function ctrTd(r){ return r.ctr==null ? '<td class="num">—</td>' : '<td class="num">'+r.ctr.toFixed(2)+'%</td>'; }
+function locTd(r){ return r.loc==null ? '<td class="num">—</td>' : '<td class="num'+(r.loc<=3.5?' loc-good':'')+'">'+r.loc.toFixed(2)+'</td>'; }
+function cnt(key){ return function(r){
+  return r[key] > 0 ? '<td class="num hi">'+num(r[key])+'</td>' : '<td class="num">0</td>';
+}; }
+function cost(key){ return function(r){
+  var v = r[key];
+  if(v == null) return '<td class="num">—</td>';
+  return '<td class="num'+(v<=100?' lc-good':(v>250?' lc-bad':''))+'">'+money(v)+'</td>';
+}; }
+function rateTd(r){ return r.rate==null ? '<td class="num">—</td>' : '<td class="num'+(r.rate>=35?' loc-good':'')+'">'+r.rate.toFixed(1)+'%</td>'; }
+function effTd(r){ var t = effOf(r); return '<td><span class="kw-eff '+t[1]+'">'+t[0]+'</span></td>'; }
+function daysTd(r){ return '<td class="num">'+(r.days||0)+'</td>'; }
+function nTd(r){ return '<td class="num">'+num(r.kw_n)+'</td>'; }
+
+// 合计行：比值类指标要用「合计÷合计」重算，不能把各行的比率相加
+function sumRatio(a, b, pct){
+  return function(t){
+    if(!t[b]) return "—";
+    var v = t[a] / t[b] * (pct ? 100 : 1);
+    return pct ? (v.toFixed(2) + "%") : money2(v);
+  };
+}
+
+// ===== 列定义：关键词 + 分类 + 11 项指标 =====
+function metricCols(){
+  return [
+    { key:"fee",    label:"消耗",       align:"num", sum:true, sumFmt:money, render:feeTd },
+    { key:"imp",    label:"展现",       align:"num", sum:true, sumFmt:num,   render:impTd },
+    { key:"clk",    label:"点击",       align:"num", sum:true, sumFmt:num,   render:clkTd },
+    { key:"ctr",    label:"CTR",        align:"num", render:ctrTd },
+    { key:"loc",    label:"均位",       align:"num", render:locTd },
+    { key:"open",   label:"开口",       align:"num", sum:true, render:cnt("open") },
+    { key:"open_c", label:"开口成本",   align:"num", sumRender:sumRatio("fee","open"), render:cost("open_c") },
+    { key:"ml",     label:"留资",       align:"num", sum:true, render:cnt("ml") },
+    { key:"mlc",    label:"留资成本",   align:"num", sumRender:sumRatio("fee","ml"),   render:cost("mlc") },
+    { key:"rate",   label:"客资获取率", align:"num", sumRender:sumRatio("ml","open",1), render:rateTd },
+    { key:"eff",    label:"效率",       sort:false, render:effTd }
+  ];
+}
+function kwLabelCol(){
+  return { key:"kw", label:"关键词", sort:false, isLabel:true, render: function(r){
+    var own = "";
+    if(r.acct_n > 1){
+      own = "投在 " + r.acct_n + " 个账号：" + (r.accts||[]).join("、")
+            + (r.acct_n > (r.accts||[]).length ? " 等" : "");
+    } else if(r.adv){
+      own = (r.city||"") + " · " + r.adv;
+    }
+    return '<td class="kwl" title="'+esc(own)+'"><span class="kwn">'+esc(r.kw)+'</span></td>';
+  } };
+}
+function tagCol(){
+  return { key:"tag", label:"分类", sort:false, render: function(r){
+    return '<td class="tagcell">'+tagChip(r)
+      + (r.lvl ? '<span class="kwt kwt-lvl" title="推荐词库层级">'+esc(r.lvl)+'</span>' : '')+'</td>';
+  } };
+}
+var COLS = {
+  kw:   [kwLabelCol(), tagCol()].concat(metricCols())
+};
+var DIM_KEY = { kw:"fee" };
+
+// ===== 通用可排序表格（合计行 + 分页）=====
+function makeGrid(cfg){
+  var state = { key: cfg.initialKey||null, dir: cfg.initialDir||"desc", page:1 };
+  var curData = cfg.data || [];
+  var pageSize = cfg.pageSize || 0;
+
+  function sortRows(data){
+    if(!state.key) return data.slice();
+    return data.slice().sort(function(a,b){
+      var va=a[state.key], vb=b[state.key];
+      if(va==null) return 1; if(vb==null) return -1;
+      var r = (typeof va==="number") ? va-vb : String(va).localeCompare(String(vb),"zh");
+      return state.dir==="desc" ? -r : r;
+    });
+  }
+  function totalOf(data){
+    var t={};
+    cfg.cols.forEach(function(c){ if(c.sum) t[c.key]=data.reduce(function(s,r){return s+(Number(r[c.key])||0);},0); });
+    return t;
+  }
+  function paged(sorted){
+    if(!pageSize) return sorted;
+    var pages = Math.max(1, Math.ceil(sorted.length / pageSize));
+    if(state.page > pages) state.page = pages;
+    var start = (state.page - 1) * pageSize;
+    return sorted.slice(start, start + pageSize);
+  }
+  function renderPager(sorted){
+    if(!cfg.pager || !pageSize) return;
+    var el = document.getElementById(cfg.pager);
+    if(!el) return;
+    var pages = Math.max(1, Math.ceil(sorted.length / pageSize));
+    if(pages <= 1){ el.innerHTML = ""; return; }
+    var cur = state.page;
+    var start = (cur-1)*pageSize + 1;
+    var end = Math.min(cur*pageSize, sorted.length);
+    function pageList(){
+      var list = [];
+      if(pages <= 7){ for(var i=1;i<=pages;i++) list.push(i); }
+      else {
+        list.push(1);
+        if(cur > 3) list.push("...");
+        for(var j=Math.max(2, cur-1); j<=Math.min(pages-1, cur+1); j++) list.push(j);
+        if(cur < pages-2) list.push("...");
+        list.push(pages);
+      }
+      return list;
+    }
+    var nums = pageList().map(function(p){
+      if(p === "...") return '<span class="pg-ellipsis">…</span>';
+      return '<button type="button" class="pg-num' + (p===cur ? " cur" : "") + '" data-pg="'+p+'">'+p+'</button>';
+    }).join("");
+    el.innerHTML =
+      '<button type="button" class="pg-btn" data-pg="first"' + (cur<=1?' disabled':'') + '>«</button>'
+      + '<button type="button" class="pg-btn" data-pg="prev"' + (cur<=1?' disabled':'') + '>‹ 上一页</button>'
+      + '<span class="pg-info">第 ' + start + '–' + end + ' 条 · 共 ' + sorted.length + ' 条</span>'
+      + nums
+      + '<button type="button" class="pg-btn" data-pg="next"' + (cur>=pages?' disabled':'') + '>下一页 ›</button>'
+      + '<button type="button" class="pg-btn" data-pg="last"' + (cur>=pages?' disabled':'') + '>»</button>';
+    Array.prototype.forEach.call(el.querySelectorAll(".pg-num,.pg-btn"), function(b){
+      b.onclick = function(){
+        var p = this.dataset.pg;
+        if(p==="first"){ if(cur>1) state.page = 1; }
+        else if(p==="prev"){ if(cur>1) state.page--; }
+        else if(p==="next"){ if(cur<pages) state.page++; }
+        else if(p==="last"){ if(cur<pages) state.page = pages; }
+        else { state.page = parseInt(p,10); }
+        render();
+        if(cfg.pagerAnchor){
+          var anchor = document.getElementById(cfg.pagerAnchor);
+          if(anchor && anchor.scrollIntoView){
+            try { anchor.scrollIntoView({block:"start", behavior:"auto"}); }
+            catch(e){ anchor.scrollIntoView(); }
+          }
+        }
+      };
+    });
+  }
+  function render(data){
+    if(data){ curData = data; state.page = 1; }
+    var sorted = sortRows(curData);
+    var total = totalOf(curData);
+    var ths = cfg.cols.map(function(c){
+      var arrow = state.key===c.key ? '<span class="arrow">'+(state.dir==="desc"?"▼":"▲")+'</span>' : "";
+      var cls = (c.align==="num"?"num ":"") + (c.sort===false?"":"sortable");
+      return '<th class="'+cls+'"'+(c.sort===false?'':' data-key="'+c.key+'"')+'>'+c.label+arrow+'</th>';
+    }).join("");
+    var trow = "";
+    if(cfg.total!==false){
+      trow = '<tr class="total-row">' + cfg.cols.map(function(c){
+        if(c.sumRender) return '<td class="'+(c.align==="num"?"num":"")+'">'+c.sumRender(total,curData)+'</td>';
+        if(c.sum) return '<td class="'+(c.align==="num"?"num":"")+'">'+(c.sumFmt||num)(total[c.key])+'</td>';
+        if(c.isLabel) return '<td class="t-label">'+(cfg.totalLabel||"合计")+'</td>';
+        return '<td></td>';
+      }).join("") + '</tr>';
+    }
+    var body = paged(sorted).map(function(r){
+      return '<tr>' + cfg.cols.map(function(c){
+        if(c.render) return c.render(r, state);
+        return '<td class="'+(c.align==="num"?"num":"")+'">'+esc(r[c.key])+'</td>';
+      }).join("") + '</tr>';
+    }).join("");
+    if(!body){
+      body = '<tr><td class="tbl-loading" colspan="'+cfg.cols.length+'">没有符合条件的数据</td></tr>';
+    }
+    cfg.el.innerHTML = '<thead><tr>'+ths+'</tr></thead><tbody>'+trow+body+'</tbody>';
+    Array.prototype.forEach.call(cfg.el.querySelectorAll("th.sortable"), function(th){
+      th.onclick = function(){
+        var k = th.dataset.key;
+        if(state.key===k) state.dir = state.dir==="desc"?"asc":"desc";
+        else { state.key=k; state.dir="desc"; }
+        state.page = 1;
+        render();
+      };
+    });
+    renderPager(sorted);
+    if(cfg.after) cfg.after();
+  }
+  render();
+  return {
+    render: render,
+    setCols: function(cols, key, dir){
+      cfg.cols = cols;
+      state.key = key || null; state.dir = dir || "desc"; state.page = 1;
+      render();
+    }
+  };
+}
+
+// ===== 状态 =====
+var kwState = { q:"", excludeAuto:false, onlyOpen:false, onlyLead:false };
+var kwFilter = {city:"", adv:"", owner:""};
+(function(){
+  var a = KWSNAP.active || {};
+  ["city","adv","owner"].forEach(function(k){ kwFilter[k] = a[k] || ""; });
+})();
+
+function matchRow(r){
+  if(kwState.onlyOpen && !(r.open > 0)) return false;
+  if(kwState.onlyLead && !(r.ml > 0)) return false;
+  if(kwState.excludeAuto && r.pseudo) return false;
+  if(!kwState.q) return true;
+  var hay = (r.kw||"")+" "+(r.tag||"")+" "+(r.adv||"")+" "+(r.city||"")+" "+(r.accts||[]).join(" ");
+  return hay.toLowerCase().indexOf(kwState.q) > -1;
+}
+function activeRows(){
+  return (KWSNAP.keywords||[]).filter(matchRow);
+}
+
+var kwGrid = makeGrid({
+  el: document.getElementById("kwTable"),
+  data: activeRows(),
+  pageSize: 20,
+  pager: "kwPager",
+  pagerAnchor: "kwTable",
+  initialKey: "fee", initialDir: "desc", totalLabel: "合计",
+  cols: COLS.kw
+});
+function refreshMain(){
+  kwGrid.setCols(COLS.kw, DIM_KEY.kw, "desc");
+  var rows = activeRows();
+  kwGrid.render(rows);
+  document.getElementById("kwCount").textContent = rows.length.toLocaleString("en-US") + " 行";
+}
+
+// ===== 筛选器（城市 / 投放账号 / 小红书号）=====
+function queryParams(extra){
+  var q = new URLSearchParams(location.search);
+  var out = { range: q.get("range") || "latest" };
+  if(out.range === "custom"){ out.start = q.get("start") || ""; out.end = q.get("end") || ""; }
+  ["city","adv","owner"].forEach(function(k){ if(kwFilter[k]) out[k] = kwFilter[k]; });
+  if(extra) Object.keys(extra).forEach(function(k){ out[k] = extra[k]; });
+  return out;
+}
+function qs(o){
+  return Object.keys(o).filter(function(k){ return o[k] !== "" && o[k] != null; })
+    .map(function(k){ return k + "=" + encodeURIComponent(o[k]); }).join("&");
+}
+function renderFilters(){
+  var F = KWSNAP.filters || {};
+  ["city","adv","owner"].forEach(function(d){
+    var box = document.getElementById("fchips-" + d);
+    if(!box) return;
+    var list = F[d] || [];
+    var cur = kwFilter[d] || "";
+    var chips = ['<button class="cbtn' + (cur ? "" : " active") + '" data-fdim="' + d + '" data-fkey="">'
+             + '全部 <span class="cbadge">' + list.length + '</span></button>'];
+    list.forEach(function(it){
+      var label = it.l || it.k;
+      var tip = it.k + " · " + it.n + " 词 · " + money(it.fee);
+      chips.push('<button class="cbtn' + (cur === it.k ? " active" : "") + '" data-fdim="' + d + '"'
+           + ' data-fkey="' + esc(it.k) + '" title="' + esc(tip) + '">'
+           + esc(short(label, 11)) + ' <span class="cbadge">' + it.n + '</span></button>');
+    });
+    // 长列表折叠：账号类维度默认显示 12 个 + 搜索框 + 「更多」展开
+    var LIMIT = 12;
+    var show = chips.slice(0, LIMIT).join("");
+    var rest = chips.slice(LIMIT);
+    var wrap;
+    if(d === "city" || rest.length === 0){
+      wrap = show;
+    } else {
+      wrap = show + '<button class="cbtn cbtn-more" data-more="' + d + '">更多 ' + rest.length + ' 个 ▾</button>'
+          + '<span class="drill-rest" data-rest="' + d + '" hidden>' + rest.join("") + '</span>';
+    }
+    var search = (d === "city") ? "" :
+      '<div class="drill-search"><input type="text" placeholder="搜索' + (d === "adv" ? "投放账号" : "小红书号") + '" data-search="' + d + '"></div>';
+    box.innerHTML = search + wrap;
+    Array.prototype.forEach.call(box.querySelectorAll(".cbtn:not(.cbtn-more)"), function(b){
+      b.onclick = function(){
+        var key = b.dataset.fkey || "";
+        if(kwFilter[d] === key) key = "";              // 再点一次取消
+        kwFilter[d] = key;
+        reloadAll();
+      };
+    });
+    Array.prototype.forEach.call(box.querySelectorAll(".cbtn-more"), function(b){
+      b.onclick = function(){
+        var restEl = box.querySelector('.drill-rest[data-rest="' + d + '"]');
+        if(!restEl) return;
+        restEl.hidden = !restEl.hidden;
+        b.textContent = restEl.hidden ? ("更多 " + restEl.querySelectorAll(".cbtn").length + " 个 ▾") : "收起 ▴";
+      };
+    });
+    var inp = box.querySelector(".drill-search input");
+    if(inp) inp.addEventListener("input", function(){
+      var kw = (this.value||"").trim();
+      var restEl = box.querySelector('.drill-rest[data-rest="' + d + '"]');
+      if(kw && restEl && restEl.hidden){
+        restEl.hidden = false;
+        var mb = box.querySelector(".cbtn-more");
+        if(mb) mb.textContent = "收起 ▴";
+      }
+      Array.prototype.forEach.call(box.querySelectorAll(".cbtn:not(.cbtn-more)"), function(x){
+        var hit = !kw || (x.dataset.fkey||"").indexOf(kw) >= 0 || (x.textContent||"").indexOf(kw) >= 0;
+        x.style.display = hit ? "" : "none";
+      });
+    });
+  });
+  }
+function reloadAll(){
+  var box = document.getElementById("kwTable");
+  box.innerHTML = '<tbody><tr><td class="tbl-loading">筛选中，正在按新范围重新汇总…</td></tr></tbody>';
+  var q = qs(queryParams());
+  fetch("/api/keyword?" + q)
+    .then(function(r){ return r.json(); })
+    .catch(function(){ return null; })
+    .then(function(j){
+      if(!j){ box.innerHTML = '<tbody><tr><td class="tbl-loading">加载失败，请刷新页面重试</td></tr></tbody>'; return; }
+      KWSNAP = j;
+      renderKPI(); renderFilters(); renderCls(); renderWaste(); refreshMain();
+      try { history.replaceState(null, "", "/keyword?" + q); } catch(e){}
+    });
+}
+
+// ===== KPI =====
+function renderKPI(){
+  var t = KWSNAP.totals || {};
+  var byCls = {};
+  (KWSNAP.classes||[]).forEach(function(c){ byCls[c.cls] = c; });
+  var outFee = (byCls["库外词"]||{}).fee || 0;
+  var autoFee = (byCls["自动词包"]||{}).fee || 0;
+  var outPct = t.fee > 0 ? (outFee/t.fee*100) : 0;
+  var autoPct = t.fee > 0 ? (autoFee/t.fee*100) : 0;
+  // 顶部总览口径与投放总览一致（单一来源 core/kpi_spec.py）
+  // 词口径字段映射：本页无 msg 字段（已与 open 合并），故开口 = t.open（私信人数）
+  renderTopKpi("kpiRow", {
+    fee: t.fee, imp: t.imp, clk: t.clk,
+    msg: t.open, ml: t.ml,
+    mlc: t.mlc, cpc: t.cpc, ctr: t.ctr
+  }, "词口径");
+  document.getElementById("kwNote").innerHTML =
+      '自动词包（智能搭建）占 <b>'+autoPct.toFixed(1)+'%</b> 消耗 · 库外词占 <b>'+outPct.toFixed(1)+'%</b>'
+    + ' · 词口径消耗为搜索词口径子集，与账户/素材口径不可相加';
+}
+
+// ===== 词类分布 =====
+function renderCls(){
+  var list = (KWSNAP.classes||[]).slice();
+  list.sort(function(a,b){ return b.fee - a.fee; });
+  var max = list.length ? (list[0].fee || 1) : 1;
+  document.getElementById("clsList").innerHTML = list.map(function(c){
+    var w = Math.max(1, (c.fee/max)*100);
+    var r = (c.open>0) ? (c.rate==null?"—":c.rate.toFixed(1)+"%") : "—";
+    return '<div class="clsrow"><span class="clsn">'+esc(c.cls)+'</span>'
+      + '<span class="clsbar"><i style="width:'+w.toFixed(1)+'%"></i></span>'
+      + '<span class="clsv">'+money(c.fee)+'</span>'
+      + '<span class="clsk">'+c.kw_n+' 词</span>'
+      + '<span class="clsl">'+(c.acct_n||0)+' 户 · 留资 '+(c.ml||0)+' · '+r+'</span></div>';
+  }).join("") || '<div class="kwnote">暂无数据</div>';
+  document.getElementById("clsNote").innerHTML =
+    '「客资获取率」= 留资 ÷ 开口；开口 = 私信人数，留资 = 私信留资数'
+    + ' · 词库共 <b>'+((KWSNAP.coverage||{}).lib_n||0).toLocaleString("en-US")+'</b> 词';
+}
+
+// ===== 高耗无开口词 =====
+var wasteGrid = null;
+function renderWaste(){
+  var data = KWSNAP.waste || [];
+  document.getElementById("wasteChip").textContent =
+    data.length + " 个 · " + money((KWSNAP.totals||{}).waste_fee||0);
+  var cols = [
+    { key:"kw", label:"关键词", sort:false, isLabel:true, render:function(r){
+        var own = (r.acct_n > 1) ? ("投在 " + r.acct_n + " 个账号：" + (r.accts||[]).join("、"))
+                                 : ((r.city||"") + " · " + (r.adv||""));
+        return '<td class="kwl" title="'+esc(own)+'"><span class="kwn">'+esc(r.kw)+'</span></td>';
+      } },
+    { key:"tag", label:"分类", sort:false, render:function(r){
+        return '<td class="tagcell">'+tagChip(r)+'</td>';
+      } },
+    { key:"fee", label:"消耗", align:"num", sum:true, sumFmt:money, render:feeTd },
+    { key:"imp", label:"展现", align:"num", sum:true, sumFmt:num, render:impTd },
+    { key:"clk", label:"点击", align:"num", sum:true, sumFmt:num, render:clkTd },
+    { key:"ctr", label:"CTR", align:"num", render:ctrTd },
+    { key:"loc", label:"均位", align:"num", render:locTd },
+    { key:"days", label:"天数", align:"num", render:daysTd }
+  ];
+  if(wasteGrid){ wasteGrid.setCols(cols, "fee", "desc"); wasteGrid.render(data); return; }
+  wasteGrid = makeGrid({
+    el: document.getElementById("wastekwTable"),
+    data: data,
+    pageSize: 20,
+    pager: "wastekwPager",
+    pagerAnchor: "wastekwTable",
+    initialKey: "fee", initialDir: "desc", totalLabel: "合计",
+    cols: cols
+  });
+}
+
+// ===== 首屏渲染 =====
+renderKPI();
+renderFilters();
+renderCls();
+renderWaste();
+refreshMain();
+
+// ===== 交互 =====
+document.getElementById("kwSearch").addEventListener("input", function(){
+  kwState.q = (this.value||"").trim().toLowerCase();
+  refreshMain();
+});
+// 筛选维度切换（城市 / 投放账号 / 小红书号）
+// 切换维度时清空其他维度已选的筛选，避免（城市=滨州 × 账号=青岛总店）这类空交集
+Array.prototype.forEach.call(document.querySelectorAll("#fDimseg .dbtn"), function(b){
+  b.addEventListener("click", function(){
+    var d = b.dataset.fdim;
+    Array.prototype.forEach.call(document.querySelectorAll("#fDimseg .dbtn"), function(x){ x.classList.remove("active"); });
+    b.classList.add("active");
+    Array.prototype.forEach.call(document.querySelectorAll(".tb-chips .dimchips"), function(x){
+      x.style.display = (x.dataset.fdim === d) ? "" : "none";
+    });
+    var cleared = false;
+    ["city","adv","owner"].forEach(function(k){
+      if(k !== d && kwFilter[k]){ kwFilter[k] = ""; cleared = true; }
+    });
+    if(cleared) reloadAll();
+  });
+});
+function bindToggle(id, key){
+  var el = document.getElementById(id);
+  if(!el) return;
+  function sync(){ el.classList.toggle("active", kwState[key]); }
+  el.addEventListener("click", function(){
+    kwState[key] = !kwState[key];
+    sync(); refreshMain();
+  });
+  sync();
+}
+bindToggle("btnExcludeAuto", "excludeAuto");
+bindToggle("btnOnlyOpen", "onlyOpen");
+bindToggle("btnOnlyLead", "onlyLead");
+
+// ===== 紧凑模式 =====
+(function(){
+  var btn = document.getElementById("btnDense");
+  if(!btn) return;
+  try { if(localStorage.getItem("kbDense") === "1") document.body.classList.add("dense"); } catch(e){}
+  btn.classList.toggle("active", document.body.classList.contains("dense"));
+  btn.addEventListener("click", function(){
+    document.body.classList.toggle("dense");
+    var on = document.body.classList.contains("dense");
+    btn.classList.toggle("active", on);
+    try { localStorage.setItem("kbDense", on ? "1" : "0"); } catch(e){}
+  });
+})();
+
+// ===== 吸顶板块导航 =====
+(function(){
+  var navItems = document.querySelectorAll(".secnav .nav-item");
+  var secs = [];
+  Array.prototype.forEach.call(navItems, function(it){ secs.push(document.getElementById(it.dataset.target)); });
+  function setActive(id){
+    Array.prototype.forEach.call(navItems, function(it){ it.classList.toggle("active", it.dataset.target===id); });
+  }
+  function current(){
+    var cur = navItems.length ? navItems[0].dataset.target : null;
+    secs.forEach(function(s, i){ if(s && s.getBoundingClientRect().top <= 90){ cur = navItems[i].dataset.target; } });
+    return cur;
+  }
+  Array.prototype.forEach.call(navItems, function(item){
+    item.addEventListener("click", function(e){
+      e.preventDefault();
+      var t = document.getElementById(item.dataset.target);
+      if(t){ window.scrollTo({ top: t.getBoundingClientRect().top + window.pageYOffset - 78, behavior:"smooth" }); }
+      setActive(item.dataset.target);
+    });
+  });
+  window.addEventListener("scroll", function(){ setActive(current()); });
+})();
+
+// ===== 区间页签：切换时保留当前筛选 =====
+Array.prototype.forEach.call(document.querySelectorAll(".secnav .nav-rtabs .rtab:not(.rtab-custom)"), function(a){
+  a.addEventListener("click", function(ev){
+    var m = /[?&]range=([^&]+)/.exec(a.getAttribute("href") || "");
+    if(!m) return;                       // 交给浏览器默认行为
+    ev.preventDefault();
+    location.search = qs(queryParams({ range: decodeURIComponent(m[1]), start:"", end:"" }));
+  });
+});
+
+// ===== 刷新 =====
+(function(){
+  var btn = document.getElementById("btnRefresh");
+  var dot = document.getElementById("rfDot");
+  function doRefresh(){
+    btn.classList.add("refreshing"); btn.textContent = "刷新中…";
+    if(dot) dot.classList.add("busy");
+    fetch("/api/refresh").then(function(){ return null; }, function(){ return null; })
+      .then(function(){ setTimeout(function(){ location.reload(); }, 1500); });
+  }
+  btn.addEventListener("click", doRefresh);
+})();
+
+// ===== 自定义起止日期 =====
+(function(){
+  var s = document.getElementById("rangeStart");
+  var e = document.getElementById("rangeEnd");
+  var pop = document.getElementById("rangePop");
+  var btnCustom = document.getElementById("btnCustomRange");
+  var hint = document.getElementById("rangeHint");
+  function iso(d){ return d.toISOString().slice(0,10); }
+  function fmtCN(sv, ev){
+    var ds = new Date(sv), de = new Date(ev);
+    var n = Math.round((de - ds) / 86400000) + 1;
+    return "共 " + n + " 天";
+  }
+  if(!s.value || !e.value){
+    var t = new Date(); t.setDate(t.getDate()-1);
+    var end = iso(t);
+    var d0 = new Date(t); d0.setDate(t.getDate()-6);
+    if(!e.value) e.value = end;
+    if(!s.value) s.value = iso(d0);
+  }
+  function refreshHint(){
+    if(s.value && e.value && s.value <= e.value){ hint.textContent = fmtCN(s.value, e.value); }
+    else { hint.textContent = ""; }
+  }
+  refreshHint();
+  Array.prototype.forEach.call(document.querySelectorAll(".qchip"), function(chip){
+    chip.addEventListener("click", function(){
+      var d = parseInt(chip.getAttribute("data-d"), 10);
+      var m = chip.getAttribute("data-m");
+      var t = new Date(); t.setDate(t.getDate()-1);
+      var end = iso(t);
+      var start;
+      if(d){
+        var d0 = new Date(t); d0.setDate(t.getDate() - (d - 1));
+        start = iso(d0);
+      } else if(m === "this"){
+        start = iso(new Date(t.getFullYear(), t.getMonth(), 1));
+      } else if(m === "last"){
+        var lm = new Date(t.getFullYear(), t.getMonth()-1, 1);
+        start = iso(lm);
+        end = iso(new Date(t.getFullYear(), t.getMonth(), 0));
+      }
+      s.value = start; e.value = end;
+      Array.prototype.forEach.call(document.querySelectorAll(".qchip"), function(c){ c.classList.remove("active"); });
+      chip.classList.add("active");
+      refreshHint();
+    });
+  });
+  function isCustomRange(){
+    var q = new URLSearchParams(location.search);
+    return q.get("range") === "custom";
+  }
+  function openPop(){ pop.hidden = false; btnCustom.classList.add("active"); }
+  function closePop(){ pop.hidden = true; if(!isCustomRange()) btnCustom.classList.remove("active"); }
+  btnCustom.addEventListener("click", function(ev){
+    ev.stopPropagation();
+    if(pop.hidden){ openPop(); } else { closePop(); }
+  });
+  pop.addEventListener("click", function(ev){ ev.stopPropagation(); });
+  document.addEventListener("click", function(){ if(!pop.hidden) closePop(); });
+  document.addEventListener("keydown", function(ev){ if(ev.key === "Escape" && !pop.hidden) closePop(); });
+  document.getElementById("btnApplyRange").addEventListener("click", function(){
+    var sv = s.value, ev = e.value;
+    if(!sv || !ev){ alert("请选择起止日期"); return; }
+    if(sv > ev){ alert("开始日期不能晚于结束日期"); return; }
+    closePop();
+    location.search = qs(queryParams({ range:"custom", start:sv, end:ev }));
+  });
+  document.getElementById("btnRangeClear").addEventListener("click", function(){
+    s.value = ""; e.value = "";
+    Array.prototype.forEach.call(document.querySelectorAll(".qchip"), function(c){ c.classList.remove("active"); });
+    hint.textContent = "";
+  });
+  if(isCustomRange()){
+    btnCustom.classList.add("active");
+    Array.prototype.forEach.call(document.querySelectorAll(".secnav .nav-rtabs .rtab:not(.rtab-custom)"), function(r){ r.classList.remove("active"); });
+  }
+})();
+
+// ===== 授权管理弹窗 =====
+var modalAuth = document.getElementById("modalAuth");
+function openAuth(){ modalAuth.classList.add("show"); }
+function closeAuth(){ modalAuth.classList.remove("show"); }
+document.getElementById("btnAuth").addEventListener("click", openAuth);
+document.getElementById("btnCloseAuth").addEventListener("click", closeAuth);
+document.getElementById("btnCloseAuth2").addEventListener("click", closeAuth);
+modalAuth.addEventListener("click", function(e){ if(e.target===modalAuth) closeAuth(); });
+
+var authLink = document.getElementById("authLink");
+var authInput = document.getElementById("authInput");
+var authMsg = document.getElementById("authMsg");
+var btnSubmitAuth = document.getElementById("btnSubmitAuth");
+var btnCopyAuth = document.getElementById("btnCopyAuth");
+function setAuthMsg(type, html){
+  if(!authMsg) return;
+  authMsg.className = "auth-msg show " + (type || "");
+  authMsg.innerHTML = html || "";
+}
+function fallbackCopy(text){
+  try{
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    var ok = document.execCommand("copy"); document.body.removeChild(ta); return ok;
+  }catch(e){ return false; }
+}
+if(btnCopyAuth && authLink){
+  btnCopyAuth.addEventListener("click", function(){
+    var url = authLink.href;
+    if(!url || url === "#"){ setAuthMsg("err", "授权链接未就绪，请刷新页面重试"); return; }
+    var done = function(){ setAuthMsg("ok", "已复制授权链接：<br>" + esc(url)); };
+    var fail = function(){ setAuthMsg("err", "复制失败，请手动复制：<br>" + esc(url)); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(done, function(){ fallbackCopy(url) ? done() : fail(); });
+    } else {
+      fallbackCopy(url) ? done() : fail();
+    }
+  });
+}
+if(btnSubmitAuth && authInput){
+  btnSubmitAuth.addEventListener("click", function(){
+    var raw = (authInput.value || "").trim();
+    if(!raw){ setAuthMsg("err", "请先粘贴回调地址或 auth_code"); return; }
+    btnSubmitAuth.disabled = true;
+    btnSubmitAuth.textContent = "提交中…";
+    setAuthMsg("load", "正在换取 token、验证并入库…");
+    fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: raw })
+    })
+      .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+      .catch(function(){ return { ok: false, j: { msg: "网络错误，请重试" } }; })
+      .then(function(res){
+        btnSubmitAuth.disabled = false;
+        btnSubmitAuth.textContent = "提交授权";
+        var j = res.j || {};
+        if(res.ok && j.ok){
+          var extra = (j.verified && j.verified.ok) ? "（数据验证通过）" : "";
+          setAuthMsg("ok", "✅ 授权成功：" + esc(j.corp || "") + extra + "<br>正在刷新页面更新账号状态…");
+          authInput.value = "";
+          setTimeout(function(){ location.reload(); }, 1200);
+        } else {
+          setAuthMsg("err", "❌ " + esc(j.msg || "提交失败"));
+        }
+      });
+  });
+}
+</script>
+</body>
+</html>
