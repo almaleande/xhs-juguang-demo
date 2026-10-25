@@ -42,7 +42,7 @@ except ImportError:
 
 
 KW_FILE = os.path.join(DATA_DIR, "keyword_daily.json")
-KWLIB_CSV = os.path.join(BASE_DIR, "关键词", "夏天_V6_最终分类.csv")
+KWLIB_CSV = os.path.join(BASE_DIR, "关键词", "示例_V6_最终分类.csv")
 KWLIB_FILE = os.path.join(DATA_DIR, "kwlib.json")
 
 # 日库里累加的指标（蛇形原名，与接口一致，便于对照）
@@ -197,7 +197,7 @@ def tag_of(kw, lib=None):
     # ---- 库外兜底（顺序有讲究：先咨询，再风格，最后才判城市词）----
     if is_pseudo(kw):
         return "自动词包", "", 0, 0
-    if "夏天" in kw:
+    if "示例" in kw:
         return "品牌词", "", 0, 0
     if any(h in kw for h in _CONSULT_HINT):
         return "咨询词", "", 0, 0

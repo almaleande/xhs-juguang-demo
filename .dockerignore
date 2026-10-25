@@ -1,0 +1,16 @@
+.git
+.DS_Store
+**/.DS_Store
+**/__pycache__
+**/*.pyc
+.creative-design
+vault/backups
+**/*.bak
+**/*.log
+**/*.tmp
+.env
+.env.*
+accounts2.csv
+_archive
+tests
+tools

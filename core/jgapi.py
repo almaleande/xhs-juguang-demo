@@ -13,6 +13,7 @@ import time
 import urllib.error
 import urllib.request
 from datetime import date, timedelta
+from core.privacy import DEMO_MODE, blocked
 
 API_BASE = "https://adapi.xiaohongshu.com"
 REPORT_PATH = "/api/open/jg/data/report/offline/creative"
@@ -87,6 +88,8 @@ def post(path, body, token=None, timeout=30, retries=None):
     发送 POST，永不抛异常；失败时返回 {'success': False, 'code', 'msg'}。
     遇到限流/网络异常会自动退避重试。
     """
+    if DEMO_MODE:
+        return blocked()
     attempts = MAX_RETRY if retries is None else retries
     last = {"success": False, "code": -1, "msg": "未执行"}
     for i in range(max(1, attempts)):

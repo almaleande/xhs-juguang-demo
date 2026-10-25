@@ -3,7 +3,7 @@
 """
 账号档案
 =========
-把账号库里难以阅读的主体键（`夏天婚纱摄影总部_780577`）
+把账号库里难以阅读的主体键（`示例婚纱摄影总部_780577`）
 翻译成人能看懂的门店账号名，并关联到对应的登录手机号。
 
 要解决的问题：**授权了哪些小红书账号，一眼看不出来** ——
@@ -45,6 +45,9 @@ STATUS_TEXT = {
 
 def load_login_accounts():
     """读登录账号清单（列：小红书名称 / 账号 / 密码）"""
+    from core.privacy import DEMO_MODE
+    if DEMO_MODE:
+        return [], None
     for p in LOGIN_CSV_CANDIDATES:
         if not os.path.exists(p):
             continue
@@ -111,14 +114,14 @@ def biz_hint(names):
 
 def hint_from_login(name, city):
     """
-    登录账号名 → 业务线后缀。如「滨州婚纱照夏天婚纱摄影」→「婚纱照」，
-    「滨州夏天婚纱摄影」→ 空（说明它是该城市的主号）。
+    登录账号名 → 业务线后缀。如「滨州婚纱照示例婚纱摄影」→「婚纱照」，
+    「滨州示例婚纱摄影」→ 空（说明它是该城市的主号）。
     """
     s = (name or "").strip()
     if city and s.startswith(city):
         s = s[len(city):]
-    s = s.replace("夏天", "").strip(" -_·－·")
-    # 去掉尾部通用词：滨州婚纱照夏天婚纱摄影 → 婚纱照
+    s = s.replace("示例", "").strip(" -_·－·")
+    # 去掉尾部通用词：滨州婚纱照示例婚纱摄影 → 婚纱照
     for w in ("婚纱摄影", "婚纱照", "摄影", "婚纱"):
         if s.endswith(w) and len(s) > len(w):
             s = s[: -len(w)].strip(" -_·－·")
@@ -132,7 +135,7 @@ def match_login(adv_names, label, rows):
     """
     匹配该主体对应的登录账号。
     优先用「登录账号名被广告主名包含」的关系（能精确到具体账号，
-    如 `滨州婚纱照夏天婚纱摄影ZX` 命中 `滨州婚纱照夏天婚纱摄影`），
+    如 `滨州婚纱照示例婚纱摄影ZX` 命中 `滨州婚纱照示例婚纱摄影`），
     精确匹配不到再退回按门店别名模糊匹配。
     """
     if not rows:
@@ -150,7 +153,7 @@ def match_login(adv_names, label, rows):
 
     if not label:
         return []
-    core = label.replace("夏天", "").strip()
+    core = label.replace("示例", "").strip()
     for r in rows:
         nm = r["name"]
         if (label in nm) or (core and core in nm):

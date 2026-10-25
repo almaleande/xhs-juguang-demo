@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-授权流程
-=========
-把「auth_code → token → 匹配主体 → 验证 → 入库」串成一次调用。
-看板服务、命令行工具都复用它。
-
-为什么 auth_code 必须立刻用：一次性、有效期只有几分钟，
-人工复制再转手很容易失效。所以入口做得越短越好。
+演示版授权边界
+=============
+保留账号总览所需的接口形状；授权入口固定禁用，不接收或保存真实凭证。
 """
 import os
 import sys
@@ -19,16 +15,13 @@ except ImportError:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from core import jgapi, tokenhub
 
-APP_ID_HINT = "10231"
+APP_ID_HINT = "10001"
 SCOPE = ["report_service", "ad_query", "ad_manage", "account_manage"]
 
 
 def auth_url(app_id=None):
-    """生成授权链接（回调固定为 httpbin.org，方便用户从地址栏取 auth_code）"""
-    aid = app_id or tokenhub.load_secret().get("app_id", APP_ID_HINT)
-    sc = "%5B" + "%2C".join(f"%22{s}%22" for s in SCOPE) + "%5D"
-    return (f"https://ad-market.xiaohongshu.com/auth?appId={aid}"
-            f"&scope={sc}&redirectUri=https://httpbin.org/get&state=abcd")
+    """演示版不生成真实授权链接。"""
+    return "#"
 
 
 def extract_code(raw):
@@ -53,7 +46,7 @@ def match_key(accounts, corp, user_id, adv_ids):
 
     ⚠ 这里曾出过一次事故：第 3 步兜底只比对 corporation_name，
     而库里 18 个条目的 corporation_name 全是同一个营业执照名
-    （`夏天婚纱摄影总部`），导致**新授权的主体被写进了
+    （`示例婚纱摄影总部`），导致**新授权的主体被写进了
     第一个"待修复"条目、把该条目原有的投放户覆盖掉**（青岛 12 个户丢失）。
 
     教训：**身份匹配必须有正向证据**（user_id 或投放户重叠），
@@ -103,101 +96,9 @@ def verify(token, advertisers, days=3, sample=3):
 
 
 def authorize(auth_code_raw, label="", do_verify=True):
-    """
-    一站式授权。
-    返回 {ok, msg, corp, key, match, advertisers, verified, token_preview}
-    """
-    code = extract_code(auth_code_raw)
-    if not code:
-        return {"ok": False, "msg": "没能从输入里识别出 auth_code，请粘贴完整回调地址或纯 code"}
-
-    secret = tokenhub.load_secret()
-    resp = jgapi.exchange_auth_code(secret["app_id"], secret["app_secret"], code)
-    if not resp.get("success"):
-        c = resp.get("code")
-        semantics, hint = jgapi.describe(c)
-        extra = "（auth_code 一次性且时效极短，请重新授权后立刻提交）" if str(c) == "410014" else ""
-        return {"ok": False, "msg": f"换取失败：{semantics} {hint}{extra}", "code": c}
-
-    data = resp["data"]
-    corp = data.get("corporation_name", "未知主体")
-    uid = (data.get("user_id") or "").strip()
-    advs = data.get("approval_advertisers") or []
-
-    v = None
-    if do_verify and advs:
-        v = verify(data["access_token"], advs)
-
-    accounts = tokenhub.load_accounts()
-    key, how = match_key(accounts, corp, uid, [a.get("advertiser_id") for a in advs])
-
-    old = accounts.get(key) if key else None
-
-    # 投放户列表做「并集」，绝不覆盖 —— 覆盖过一次，丢了 12 个青岛投放户
-    merged, seen_ids = [], set()
-    for a in ((old or {}).get("advertisers") or []) + list(advs):
-        aid = a.get("advertiser_id")
-        if aid in seen_ids:
-            continue
-        seen_ids.add(aid)
-        merged.append(a)
-    added = len(merged) - len((old or {}).get("advertisers") or []) if old else 0
-    dropped = len((old or {}).get("advertisers") or []) + len(advs) - len(merged) if old else 0
-
-    rec = {
-        "corporation_name": corp,
-        "access_token": data["access_token"],
-        "refresh_token": data["refresh_token"],
-        "access_token_expires_in": data.get("access_token_expires_in", 86399),
-        "refresh_token_expires_in": data.get("refresh_token_expires_in", 2591999),
-        "created_at": data.get("created_at", int(time.time())),
-        "advertiser_ids": [a["advertiser_id"] for a in merged],
-        "advertisers": merged,
-    }
-    for f in ("user_id", "scope"):
-        if data.get(f):
-            rec[f] = data[f]
-    if old:
-        # 保留历史备注
-        for f in ("refresh_history", "note"):
-            if old.get(f):
-                rec[f] = old[f]
-        if added or dropped:
-            notes = []
-            if added:
-                notes.append(f"本次授权新增 {added} 个投放户")
-            if dropped:
-                notes.append(f"与设备记录重合 {dropped} 个")
-            prev = rec.get("note")
-            rec["note"] = (f"{prev}｜" if prev else "") + "；".join(notes)
-
-    if key is None:
-        from core.collector import owner_label
-        key = f"{corp}" + (f"_{label}" if label else "")
-        n = 1
-        base = key
-        while key in accounts:
-            n += 1
-            key = f"{base}_{n}"
-
-    accounts[key] = rec
-    saved = tokenhub.save_accounts(accounts, f"看板授权-{corp}")
-
-    tok = data["access_token"]
-    return {
-        "ok": True,
-        "msg": "授权成功" + ("，数据验证通过" if (v and v["ok"]) else
-                            ("，但验证未通过" if v and not v["ok"] else "")),
-        "corp": corp,
-        "user_id": uid,
-        "key": key,
-        "match": how,
-        "advertisers": advs,
-        "verified": v,
-        "saved": saved,
-        "token_preview": f"{tok[:6]}...{tok[-4:]}(len={len(tok)})",
-        "classify": tokenhub.classify(rec),
-    }
+    """演示版拒绝授权，不解析授权码、不访问上游、不保存凭证。"""
+    from core.privacy import blocked
+    return blocked()
 
 
 if __name__ == "__main__":

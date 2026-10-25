@@ -41,6 +41,7 @@ sys.path.insert(0, BASE_DIR)
 from core import (authflow, collector, diagapi, diagrender, kwdata,  # noqa: E402
                    ranges, tokenhub, balances)
 from core.paths import REPORTS_DIR  # noqa: E402
+from core.privacy import DEMO_MODE, blocked  # noqa: E402
 
 
 def _load_kanban():
@@ -596,7 +597,7 @@ def diag_guide_html(s, e, label, rng, start, end):
     html = """<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>夏天 · 小红书聚光 · 投放诊断看板</title>
+<title>小红书聚光投放工作台-AI自动化分析决策系统</title>
 <style>%s
 .wrap{max-width:1440px;margin:0 auto;padding:0 32px 80px}
 .gsec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;
@@ -626,8 +627,7 @@ def diag_guide_html(s, e, label, rng, start, end):
 </style></head>
 <body><div class="wrap">
   <header class="hero"><div class="hero-row1">
-    <div class="brand"><div class="logo">金</div>
-      <div><h1><span class="b-name">夏天</span><span class="b-sep">·</span><span class="b-desc">小红书聚光投放看板</span></h1></div></div>
+    <div class="brand"><div><h1><span class="b-name">小红书聚光投放工作台</span><span class="b-desc">AI 驱动 · 自动分析与投放决策</span></h1></div></div>
     <div class="hero-side">%s</div>
   </div>
   <div class="kpis" id="kpis">__GUIDE_KPIS__</div>
@@ -875,7 +875,7 @@ def write_static(html):
     os.makedirs(REPORTS_DIR, exist_ok=True)
     tmp = OUT_HTML + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        f.write(html)
+        f.write(html.replace('"assets/', '"../assets/').replace("'assets/", "'../assets/"))
     os.replace(tmp, OUT_HTML)
 
 
@@ -899,6 +899,9 @@ def refresh_data(verbose=True, force_creative=False):
     正常轮询用 False —— 靠「账号集合指纹」判失效即可，不会白拉。
     授权请求可能落在「正在刷新」期间，故 force 意图记在 STATE 里由下一轮消费。
     """
+    if DEMO_MODE:
+        build_all(force=True)
+        return True
     with LOCK:
         if STATE["refreshing"]:
             return False
@@ -1081,7 +1084,7 @@ def request_refresh(force_creative=False):
 
 def refresher_loop():
     # KB_NO_REFRESH=1：只服务本地快照、不自动拉数（调试/验证用，避免与另一实例并发拉数）
-    if os.environ.get("KB_NO_REFRESH") == "1":
+    if DEMO_MODE or os.environ.get("KB_NO_REFRESH") == "1":
         print("  ⚠ KB_NO_REFRESH=1：已禁用自动拉数，仅服务本地快照")
         return
     while True:
@@ -1358,6 +1361,9 @@ class Handler(BaseHTTPRequestHandler):
 
         # 短链：方便群发。点一下直接进小红书授权页
         if path in ("/go", "/auth"):
+            if DEMO_MODE:
+                self._json(blocked(), 403)
+                return
             self.send_response(302)
             self.send_header("Location", authflow.auth_url())
             self.send_header("Content-Length", "0")
@@ -1391,6 +1397,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def _route_post(self):
         path, _ = self._query()
+        # 在读取请求正文前拒绝，授权码不解析、不记录、不入库。
+        if DEMO_MODE and path in ("/api/auth", "/api/balances/refresh"):
+            self.close_connection = True
+            self._json(blocked(), 403)
+            return
         try:
             n = int(self.headers.get("Content-Length") or 0)
             raw = self.rfile.read(n).decode("utf-8") if n else "{}"

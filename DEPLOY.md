@@ -1,7 +1,7 @@
 # 服务器部署指南（让评委在线访问）
 
 > 演示版是**纯 Python 标准库**服务（http.server），无需 pip install 任何第三方包。
-> 服务器装好 Python 3.8+ 即可运行；所有 Token 均为 demo 占位，不会发起任何真实外部 API 调用，可放心公网展示。
+> 所有 Token 均为 demo 占位，聚光外部 API 请求已禁用。对外上传请使用脱敏交付 ZIP，勿上传原开发目录的 Git 历史；经营指标仍须自行确认公开权限。
 
 ## 云服务器跑完整动态版（推荐，含关键词页/诊断页）
 
@@ -16,14 +16,14 @@
 ### 2. 上传项目
 在本地电脑执行（Windows 用 WinSCP / macOS 用 scp）：
 ```bash
-# 把整个演示版目录传到服务器 /opt/ 下
-scp -r "/Users/shuli/Documents/工作空间/夏天婚纱_聚光工作台_演示版" root@<服务器IP>:/opt/
+# 在脱敏交付包解压后的上级目录执行
+scp -r "聚光投放工作台_脱敏版" root@<服务器IP>:/opt/
 ```
 
 ### 3. 启动服务
 ```bash
 ssh root@<服务器IP>
-cd /opt/夏天婚纱_聚光工作台_演示版
+cd /opt/聚光投放工作台_脱敏版
 nohup python3 看板服务.py 8868 5 > /tmp/demo.log 2>&1 &
 curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8868/   # 应返回 200
 ```
@@ -60,7 +60,7 @@ Description=XHS Juguang Demo
 After=network.target
 
 [Service]
-WorkingDirectory=/opt/夏天婚纱_聚光工作台_演示版
+WorkingDirectory=/opt/聚光投放工作台_脱敏版
 ExecStart=/usr/bin/python3 看板服务.py 8868 5
 Restart=always
 
@@ -73,4 +73,4 @@ sudo systemctl enable --now xhs-demo
 
 ## 演示后清理
 - 公开展示结束，建议关闭端口或删除服务器上的演示目录，避免长期暴露。
-- 本演示版不含任何真实密钥/真实品牌/真实城市数据，可安全公开。
+- 原工作台品牌、原封面与文档元数据已处理；当前 190 张封面及匹配标题为用户提供的新摄影配图与抓取原始标题，含真实人像，并非完全匿名。城市地名及指标保留，公开前需确认经营数据和图文使用权限。

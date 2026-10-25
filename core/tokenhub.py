@@ -57,6 +57,12 @@ def load_accounts():
 
 def save_accounts(accounts, remark=""):
     """走 vault 的安全写入（备份 → 写临时 → 校验 → 原子替换）"""
+    from core.privacy import DEMO_MODE
+    if DEMO_MODE and any(
+        rec.get(field) and not str(rec[field]).startswith("demo_")
+        for rec in accounts.values() for field in ("access_token", "refresh_token")
+    ):
+        raise ValueError("演示版不允许保存真实凭证")
     vault = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "vault")
     if vault not in sys.path:
         sys.path.insert(0, vault)

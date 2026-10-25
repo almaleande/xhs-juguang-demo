@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>夏天 · 小红书聚光 · 投放诊断看板</title>
+<title>小红书聚光投放工作台-AI自动化分析决策系统</title>
 <style>
 :root{
   --bg:#F7F7F4; --card:#FFFFFF; --ink:#23262B; --ink2:#555B66; --ink3:#9AA0AB;
@@ -42,6 +42,13 @@ a{color:var(--gold);text-decoration:none}
 @keyframes rfPulse{0%,100%{opacity:1}50%{opacity:.35}}
 .refreshbar .rf-txt{color:var(--ink3)}
 .refreshbar .rf-txt b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:9px;
+  font-family:inherit;font-size:12.5px;padding:6px 13px;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn:hover{border-color:var(--gold);color:var(--gold-deep)}
+.btn .bdot{display:inline-block;min-width:16px;margin-left:4px;padding:0 4px;border-radius:9px;
+  background:var(--gold-deep);color:#fff;font-size:10.5px;line-height:15px;font-weight:600}
+.refreshbar .rf-sel{border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:8px;
+  font-family:inherit;font-size:12px;padding:5px 8px;cursor:pointer}
 .btn-allr{display:inline-flex;align-items:center;gap:4px;font-family:inherit;font-size:12px;
   padding:6px 12px;border-radius:9px;border:1px solid var(--gold);background:transparent;
   color:var(--gold-deep);cursor:pointer;white-space:nowrap}
@@ -240,6 +247,14 @@ a{color:var(--gold);text-decoration:none}
   border-radius:8px;cursor:pointer;font-family:inherit;font-weight:600}
 .btn-apply:hover{filter:brightness(1.05)}
 .sec-hint{margin-bottom:12px;font-size:12px;color:var(--ink3)}
+@media print{
+  body.print-mode .hero-side, body.print-mode .secnav, body.print-mode .fab,
+  body.print-mode .rtabs, body.print-mode .toolbar, body.print-mode .d-tools,
+  body.print-mode .d-filter, body.print-mode button.btn, body.print-mode .btn-allr{display:none !important}
+  body.print-mode .wrap, body.print-mode .gsec{box-shadow:none !important;margin:0 !important}
+  body.print-mode .kpis{break-inside:avoid}
+  @page{margin:12mm}
+}
 __TOP_STABLE_CSS__
 </style>
 </head>
@@ -248,15 +263,26 @@ __TOP_STABLE_CSS__
   <header class="hero">
     <div class="hero-row1">
       <div class="brand">
-        <div class="logo">夏</div>
         <div>
-          <h1><span class="b-name">夏天</span><span class="b-sep">·</span><span class="b-desc">小红书聚光投放看板</span></h1>
+          <h1><span class="b-name">小红书聚光投放工作台</span><span class="b-desc">AI 驱动 · 自动分析与投放决策</span></h1>
         </div>
       </div>
       <div class="hero-side">
         <div class="pgtab"><a class="pt" href="/" title="素材投放总览">投放总览</a><a class="pt" href="/keyword" title="关键词（搜索词）看板">关键词</a><a class="pt active" href="/diag" title="计划级投放诊断">投放诊断</a></div>
+        <button class="btn" id="btnPrint">⤓ 导出</button>
+        <div class="refreshbar" id="refreshBar">
+          <span class="dot" id="rfDot"></span>
+          <span class="rf-txt" id="diagMeta">区间 —</span>
+          <button class="btn" id="btnRefresh">↻ 刷新</button>
+          <button class="btn" id="btnBal" title="拉取各投放户实时余额（约需 20s）">⇆ 刷新余额</button>
+          <select class="rf-sel" id="rfInterval" title="定时刷新间隔">
+            <option value="0" selected>手动刷新</option>
+            <option value="1440">1 天</option>
+            <option value="10080">7 天</option>
+            <option value="21600">15 天</option>
+          </select>
+        </div>
         <button class="btn-allr" id="btnAllRanges" type="button" title="把 8 个档位里还没有的都采好，之后切档位全部秒开">备好全部档位<em id="allRangesN"></em></button>
-        <div class="refreshbar" id="diagMeta"></div>
         <div class="bpop" id="allPop" hidden>
           <div class="bpop-t">档位采集状态</div>
           <ul class="bpop-l" id="allList"><li><span>读取中…</span><span></span></li></ul>
@@ -407,9 +433,12 @@ function pct2(v){ if(v==null) return "—"; return Number(v).toFixed(2)+"%"; }
 (function(){
   var r = SUMMARY.range, cov = SUMMARY.coverage;
   var gen = SUMMARY.collected_at ? new Date(SUMMARY.collected_at*1000).toLocaleString("zh-CN") : "";
-  document.getElementById("diagMeta").innerHTML =
-    "<span class='dot'></span><span class='rf-txt'>区间 <b>"+esc(r.start)+" ~ "+esc(r.end)+"</b> · 采集于 <b>"+gen+"</b></span>"+
-    "<span class='cov'>覆盖 "+cov.ok+"/"+cov.advertisers+" 户 · "+cov.fail+" 失败 · "+cov.plans+" 计划</span>";
+  var dm = document.getElementById("diagMeta");
+  if(dm){
+    dm.innerHTML =
+      "区间 <b>"+esc(r.start)+" ~ "+esc(r.end)+"</b> · 采集于 <b>"+esc(gen)+"</b>"+
+      " · 覆盖 "+cov.ok+"/"+cov.advertisers+" 户 · "+cov.fail+" 失败 · "+cov.plans+" 计划";
+  }
   var hc = SUMMARY.health_cnt;
   // 顶部总览口径与投放总览一致（单一来源 core/kpi_spec.py）
   var _S = {fee:0, imp:0, clk:0, msg:0, ml:0};
@@ -869,6 +898,64 @@ render();
   fetch("/api/diag/batch/plan").then(function(r){ return r.json(); }).then(function(j){
     if(bn) bn.textContent = j.n_missing > 0 ? ("缺 " + j.n_missing) : "";
   }).catch(function(){});
+})();
+
+// ---------- 刷新控制（手动 + 定时 + 最后刷新时间 + 导出）----------
+(function(){
+  var btnRefresh = document.getElementById("btnRefresh");
+  var rfDot = document.getElementById("rfDot");
+  var rfInterval = document.getElementById("rfInterval");
+  var btnBal = document.getElementById("btnBal");
+  var btnPrint = document.getElementById("btnPrint");
+  var rfTimer = null;
+
+  function nowTime(){
+    var d = new Date();
+    function p(n){ return (n<10 ? "0" : "") + n; }
+    return d.getFullYear() + "-" + p(d.getMonth()+1) + "-" + p(d.getDate())
+         + " " + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+  }
+
+  function doRefresh(){
+    if(!btnRefresh || btnRefresh.classList.contains("refreshing")) return;
+    btnRefresh.classList.add("refreshing");
+    btnRefresh.textContent = "刷新中…";
+    if(rfDot) rfDot.classList.add("busy");
+    fetch("/api/refresh", { method: "POST" })
+      .then(function(){ return null; }, function(){ return null; })
+      .then(function(){ setTimeout(function(){ location.reload(); }, 1500); });
+  }
+
+  function scheduleAuto(){
+    var m = parseInt(rfInterval.value, 10) || 0;
+    if(rfTimer){ clearInterval(rfTimer); rfTimer = null; }
+    if(m > 0){ rfTimer = setInterval(doRefresh, m * 60 * 1000); }
+  }
+
+  if(btnRefresh) btnRefresh.addEventListener("click", doRefresh);
+  if(rfInterval) rfInterval.addEventListener("change", scheduleAuto);
+
+  if(btnBal){
+    btnBal.addEventListener("click", function(){
+      if(btnBal.classList.contains("refreshing")) return;
+      btnBal.classList.add("refreshing");
+      btnBal.textContent = "余额刷新中…";
+      fetch("/api/balances/refresh", { method: "POST" })
+        .then(function(){ return null; }, function(){ return null; })
+        .then(function(){
+          btnBal.classList.remove("refreshing");
+          btnBal.textContent = "⇆ 刷新余额";
+          location.reload();
+        });
+    });
+  }
+
+  if(btnPrint){
+    btnPrint.addEventListener("click", function(){
+      document.body.classList.add("print-mode");
+      setTimeout(function(){ window.print(); document.body.classList.remove("print-mode"); }, 120);
+    });
+  }
 })();
 </script>
 </body>

@@ -259,15 +259,9 @@ def save_cfg_cache(by_adv):
 
 
 def _is_demo_mode():
-    """演示模式：账号库全部为 demo_ 占位授权（无真实 token）。"""
-    try:
-        accts = tokenhub.load_accounts()
-        vals = [v or {} for v in accts.values()]
-        if not vals:
-            return False
-        return all(str((v.get("access_token") or "")).startswith("demo_") for v in vals)
-    except Exception:
-        return False
+    """使用固定演示开关，不依据输入凭证切换到生产。"""
+    from core.privacy import DEMO_MODE
+    return DEMO_MODE
 
 
 def fake_collect_plans(start_date, end_date):
@@ -308,8 +302,8 @@ def fake_collect_plans(start_date, end_date):
             continue
         n_ok += 1
         city = it.get("city") or "其他"
-        name = it.get("name") or "夏天婚纱摄影"
-        key = it.get("owner_key") or "夏天婚纱摄影总部"
+        name = it.get("name") or "示例婚纱摄影"
+        key = it.get("owner_key") or "示例婚纱摄影总部"
         n_camps = rnd.randint(2, 5)
         fee_each = agg["fee"] / n_camps
         for _j in range(n_camps):

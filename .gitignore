@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# macOS
+.DS_Store
+
+# 日志与运行残留
+*.log
+nohup.out
+*.pid
+
+# 本地设计状态与敏感运行文件
+.creative-design/
+.env
+.env.*
+accounts2.csv
+vault/backups/
+*.bak
+*.tmp

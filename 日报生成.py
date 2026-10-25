@@ -202,7 +202,7 @@ for i, c in enumerate(sorted_cr, 1):
        data-full="{c['creativity_image']}">
   <div class="cover-preview"><img src="{c['creativity_image']}"></div>
 </div>
-<a class="note-link" href="https://www.xiaohongshu.com/explore/{c['note_id']}" target="_blank">\U0001f517</a>"""
+<span class="note-link" title="演示素材，不提供原文链接">演示</span>"""
     else:
         cover = "-"
 

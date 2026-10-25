@@ -11,6 +11,8 @@
 基准日：一律以「昨天」为数据基准 —— 聚光当日数据通常未结算。
 """
 from datetime import datetime, timedelta
+import os
+from core.privacy import DEMO_MODE, DEMO_REFERENCE_DATE
 
 # 顺序即页面上的显示顺序
 RANGES = [
@@ -34,8 +36,16 @@ LEGACY_DAYS = {"today": 1, "prev": 1, "d7": 7, "d14": 14, "d30": 30}
 
 
 def bounds(key, today=None):
-    """区间键 → (起, 止) 的 date；未知键按「昨日」处理。"""
-    t = today or datetime.now().date()
+    """区间键 → (起, 止) 的 date；未知键按「昨日」处理。
+
+    today 可由调用方传入；未传时支持环境变量 KB_REF_DATE 固定「今日」基准
+    （演示数据锚定在某个日期时，用它覆盖系统实时日期，避免错位取空）。
+    """
+    if today is None:
+        _ref = os.environ.get("KB_REF_DATE") or (DEMO_REFERENCE_DATE if DEMO_MODE else None)
+        today = (_ref and datetime.fromisoformat(_ref).date()
+                 or datetime.now().date())
+    t = today
     y = t - timedelta(days=1)
     if key in ("today", "latest", "prev"):
         return y, y

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>夏天 · 小红书关键词看板</title>
+<title>小红书聚光投放工作台-AI自动化分析决策系统</title>
 <style>
 __SHARED_CSS__
 .pgtab{display:inline-flex;gap:2px;background:#EFEDE8;border-radius:10px;padding:3px;flex:none}
@@ -125,6 +125,15 @@ body.dense #kwTable .kwt{display:none}
   .dimchips::-webkit-scrollbar{display:none}
   .cbtn{min-height:32px}
 }
+@media print{
+  body.print-mode .hero-side, body.print-mode .secnav, body.print-mode .fab,
+  body.print-mode .rtabs, body.print-mode .toolbar, body.print-mode .m-tools,
+  body.print-mode .m-filter, body.print-mode .chipbar, body.print-mode .m-foot,
+  body.print-mode button.btn{display:none !important}
+  body.print-mode .wrap, body.print-mode .m-card{box-shadow:none !important;margin:0 !important}
+  body.print-mode .kpis{break-inside:avoid}
+  @page{margin:12mm}
+}
 __TOP_STABLE_CSS__
 </style>
 </head>
@@ -134,18 +143,25 @@ __TOP_STABLE_CSS__
   <header class="hero">
     <div class="hero-row1">
       <div class="brand">
-        <div class="logo">夏</div>
         <div>
-          <h1><span class="b-name">夏天</span><span class="b-sep">·</span><span class="b-desc">小红书聚光投放看板</span></h1>
+          <h1><span class="b-name">小红书聚光投放工作台</span><span class="b-desc">AI 驱动 · 自动分析与投放决策</span></h1>
         </div>
       </div>
       <div class="hero-side">
         <div class="pgtab"><a class="pt" href="/" title="素材投放总览">投放总览</a><a class="pt active" href="/keyword" title="关键词（搜索词）看板">关键词</a><a class="pt" href="/diag" title="计划级投放诊断">投放诊断</a></div>
+        <button class="btn" id="btnPrint">⤓ 导出</button>
         <button class="btn" id="btnAuth">授权管理<span class="bdot" id="authBdot">__PENDING_N__</span></button>
         <div class="refreshbar">
           <span class="dot" id="rfDot"></span>
-          <span class="rf-txt">聚光开放平台 · 最后刷新 <b id="rfLast">__LAST_REFRESH__</b></span>
+          <span class="rf-txt">本地演示 · 基准 2026-10-23 · 最后刷新 <b id="rfLast">__LAST_REFRESH__</b></span>
           <button class="btn" id="btnRefresh">↻ 刷新</button>
+          <button class="btn" id="btnBal" title="拉取各投放户实时余额（约需 20s）">⇆ 刷新余额</button>
+          <select class="rf-sel" id="rfInterval" title="定时刷新间隔">
+            <option value="0" selected>手动刷新</option>
+            <option value="1440">1 天</option>
+            <option value="10080">7 天</option>
+            <option value="21600">15 天</option>
+          </select>
         </div>
       </div>
     </div>
@@ -222,7 +238,7 @@ __TOP_STABLE_CSS__
 
   <div class="card" id="sec-cls">
     <h2>词类分布</h2>
-    <div class="hint">按「夏天_v6 推荐词库」（7173 词）的意图分类打标；库外词 = 不在推荐词库内的投放词</div>
+    <div class="hint">按「示例_v6 推荐词库」（7173 词）的意图分类打标；库外词 = 不在推荐词库内的投放词</div>
     <div class="cls-wrap" id="clsList"></div>
     <div class="kwnote" id="clsNote"></div>
   </div>
@@ -234,25 +250,13 @@ __TOP_STABLE_CSS__
   <div class="mbox">
     <button class="modal-x" id="btnCloseAuth" title="关闭">×</button>
     <h3>授权管理</h3>
-    <div class="msub">小红书聚光的 auth_code 是<b>一次性</b>的、几分钟就失效，拿到要立刻提交。<br>流程：点「打开授权页」→ 用对应小红书账号登录并确认 → 复制跳转后的地址栏 → 粘进来提交。换 token、验证、入库全自动。</div>
+    <div class="msub">演示模式：仅展示虚构账号的授权状态，不包含真实凭证。真实授权、凭证录入和外部采集已关闭。</div>
 
     <h4>账号授权总览 <span class="chip" id="accSum">__AUTH_SUM__</span></h4>
     <div class="acc-list" id="accList">__AUTH_ROWS__</div>
 
-    <h4>提交授权</h4>
-    <div class="auth-steps">
-      <b>1</b>　点下方「打开授权页」<br>
-      <b>2</b>　用对应小红书账号登录（短信验证码）→ 点「确认授权」<br>
-      <b>3</b>　页面跳到 httpbin.org 后，<b>立刻 Ctrl+A 全选地址栏并复制</b><br>
-      <b>4</b>　粘贴到下面，点「提交授权」
-    </div>
-    <div class="auth-row">
-      <a class="auth-link" id="authLink" href="__AUTH_URL__" target="_blank" rel="noopener">打开授权页 ↗</a>
-      <button class="btn" id="btnCopyAuth">复制授权链接</button>
-    </div>
-    <textarea id="authInput" class="auth-input" placeholder="把整条回调地址粘进来即可（形如 https://httpbin.org/get?auth_code=xxx&state=abcd），也可以只粘 auth_code"></textarea>
+    <div class="auth-steps">本面板仅用于演示账号管理。请勿输入真实 Token、授权码、手机号或密码。</div>
     <div class="auth-row" style="margin-top:12px;margin-bottom:0">
-      <button class="btn-primary" id="btnSubmitAuth">提交授权</button>
       <button class="btn-ghost" id="btnCloseAuth2">关闭</button>
     </div>
     <div class="auth-msg" id="authMsg"></div>
@@ -789,17 +793,69 @@ Array.prototype.forEach.call(document.querySelectorAll(".secnav .nav-rtabs .rtab
   });
 });
 
-// ===== 刷新 =====
+// ===== 刷新控制（手动 + 定时 + 最后刷新时间）=====
 (function(){
-  var btn = document.getElementById("btnRefresh");
-  var dot = document.getElementById("rfDot");
-  function doRefresh(){
-    btn.classList.add("refreshing"); btn.textContent = "刷新中…";
-    if(dot) dot.classList.add("busy");
-    fetch("/api/refresh").then(function(){ return null; }, function(){ return null; })
-      .then(function(){ setTimeout(function(){ location.reload(); }, 1500); });
+  var btnRefresh = document.getElementById("btnRefresh");
+  var rfDot = document.getElementById("rfDot");
+  var rfLast = document.getElementById("rfLast");
+  var rfInterval = document.getElementById("rfInterval");
+  var btnBal = document.getElementById("btnBal");
+  var rfTimer = null;
+
+  function nowTime(){
+    var d = new Date();
+    function p(n){ return (n<10 ? "0" : "") + n; }
+    return d.getFullYear() + "-" + p(d.getMonth()+1) + "-" + p(d.getDate())
+         + " " + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
   }
-  btn.addEventListener("click", doRefresh);
+
+  function doRefresh(){
+    if(btnRefresh.classList.contains("refreshing")) return;
+    btnRefresh.classList.add("refreshing");
+    btnRefresh.textContent = "刷新中…";
+    if(rfDot) rfDot.classList.add("busy");
+    fetch("/api/refresh", { method: "POST" })
+      .then(function(){ return null; }, function(){ return null; })
+      .then(function(res){
+        if(rfLast){ rfLast.textContent = nowTime(); }
+        setTimeout(function(){ location.reload(); }, 1500);
+      });
+  }
+
+  function scheduleAuto(){
+    var m = parseInt(rfInterval.value, 10) || 0;
+    if(rfTimer){ clearInterval(rfTimer); rfTimer = null; }
+    if(m > 0){ rfTimer = setInterval(doRefresh, m * 60 * 1000); }
+  }
+
+  if(btnRefresh) btnRefresh.addEventListener("click", doRefresh);
+  if(rfInterval){
+    rfInterval.addEventListener("change", scheduleAuto);
+  }
+
+  if(btnBal){
+    btnBal.addEventListener("click", function(){
+      if(btnBal.classList.contains("refreshing")) return;
+      btnBal.classList.add("refreshing");
+      btnBal.textContent = "余额刷新中…";
+      fetch("/api/balances/refresh", { method: "POST" })
+        .then(function(){ return null; }, function(){ return null; })
+        .then(function(){
+          btnBal.classList.remove("refreshing");
+          btnBal.textContent = "⇆ 刷新余额";
+          location.reload();
+        });
+    });
+  }
+
+  // 导出 / 打印
+  var btnPrint = document.getElementById("btnPrint");
+  if(btnPrint){
+    btnPrint.addEventListener("click", function(){
+      document.body.classList.add("print-mode");
+      setTimeout(function(){ window.print(); document.body.classList.remove("print-mode"); }, 120);
+    });
+  }
 })();
 
 // ===== 自定义起止日期 =====
@@ -890,66 +946,7 @@ document.getElementById("btnCloseAuth").addEventListener("click", closeAuth);
 document.getElementById("btnCloseAuth2").addEventListener("click", closeAuth);
 modalAuth.addEventListener("click", function(e){ if(e.target===modalAuth) closeAuth(); });
 
-var authLink = document.getElementById("authLink");
-var authInput = document.getElementById("authInput");
-var authMsg = document.getElementById("authMsg");
-var btnSubmitAuth = document.getElementById("btnSubmitAuth");
-var btnCopyAuth = document.getElementById("btnCopyAuth");
-function setAuthMsg(type, html){
-  if(!authMsg) return;
-  authMsg.className = "auth-msg show " + (type || "");
-  authMsg.innerHTML = html || "";
-}
-function fallbackCopy(text){
-  try{
-    var ta = document.createElement("textarea");
-    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-    document.body.appendChild(ta); ta.select();
-    var ok = document.execCommand("copy"); document.body.removeChild(ta); return ok;
-  }catch(e){ return false; }
-}
-if(btnCopyAuth && authLink){
-  btnCopyAuth.addEventListener("click", function(){
-    var url = authLink.href;
-    if(!url || url === "#"){ setAuthMsg("err", "授权链接未就绪，请刷新页面重试"); return; }
-    var done = function(){ setAuthMsg("ok", "已复制授权链接：<br>" + esc(url)); };
-    var fail = function(){ setAuthMsg("err", "复制失败，请手动复制：<br>" + esc(url)); };
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(url).then(done, function(){ fallbackCopy(url) ? done() : fail(); });
-    } else {
-      fallbackCopy(url) ? done() : fail();
-    }
-  });
-}
-if(btnSubmitAuth && authInput){
-  btnSubmitAuth.addEventListener("click", function(){
-    var raw = (authInput.value || "").trim();
-    if(!raw){ setAuthMsg("err", "请先粘贴回调地址或 auth_code"); return; }
-    btnSubmitAuth.disabled = true;
-    btnSubmitAuth.textContent = "提交中…";
-    setAuthMsg("load", "正在换取 token、验证并入库…");
-    fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: raw })
-    })
-      .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
-      .catch(function(){ return { ok: false, j: { msg: "网络错误，请重试" } }; })
-      .then(function(res){
-        btnSubmitAuth.disabled = false;
-        btnSubmitAuth.textContent = "提交授权";
-        var j = res.j || {};
-        if(res.ok && j.ok){
-          var extra = (j.verified && j.verified.ok) ? "（数据验证通过）" : "";
-          setAuthMsg("ok", "✅ 授权成功：" + esc(j.corp || "") + extra + "<br>正在刷新页面更新账号状态…");
-          authInput.value = "";
-          setTimeout(function(){ location.reload(); }, 1200);
-        } else {
-          setAuthMsg("err", "❌ " + esc(j.msg || "提交失败"));
-        }
-      });
-  });
-}
+// 演示版不提供凭证输入或提交操作。
 </script>
 </body>
 </html>

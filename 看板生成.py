@@ -323,7 +323,7 @@ def chip_label(n, limit=10):
 
     区分信息（城市 / 直营店 / 婚前影像 / 婚纱照）都在前半段，
     尾部「1-总店」「-总店」反而是多数账号共有的 —— 保留尾部、砍中段会让
-    「夏天青岛直营店1-总店」和「青岛夏天婚前影像1-总店」长得一模一样。
+    「示例青岛直营店1-总店」和「青岛示例婚前影像1-总店」长得一模一样。
 
     「（推断）」后缀占 4 个字太浪费，改成虚线下划线标记（见 `.dc-n.infer`）。
     """
@@ -492,16 +492,7 @@ def eff_action(tag):
 
 
 def note_url(nid, title=""):
-    """
-    笔记原文直达。
-    ⚠ 实测：https://www.xiaohongshu.com/explore/<note_id> 未登录访问会失效
-    （需要接口不提供的 xsec_token）。可行替代是「站内搜索笔记标题」，实测能命中。
-    """
-    if title:
-        return ("https://www.xiaohongshu.com/search_result?keyword="
-                + quote(title[:30]))
-    if nid:
-        return f"https://www.xiaohongshu.com/explore/{nid}"
+    """演示素材不链接到真实笔记或站内搜索。"""
     return ""
 
 
@@ -1143,7 +1134,7 @@ def build_html(snapshot, title_suffix="", source_note="",
     html = f"""<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>夏天 · 小红书聚光投放看板</title>
+<title>小红书聚光投放工作台</title>
 <style>
 *{{margin:0;padding:0;box-sizing:border-box}}
 body{{font-family:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
@@ -1687,7 +1678,7 @@ font-variant-numeric:tabular-nums}}
 <header class="hero">
   <div class="hero-row1">
     <div class="brand"><div class="logo">金</div>
-      <div><h1>夏天 · 小红书聚光投放看板</h1>
+      <div><h1>小红书聚光投放工作台</h1>
       <div class="sub">14 城 · 素材获客分析{esc(title_suffix)}</div></div>
     </div>
     <div class="hero-actions">
@@ -1848,30 +1839,15 @@ font-variant-numeric:tabular-nums}}
 <div class="modal" id="modalAuth">
   <div class="mbox">
     <h3>授权管理</h3>
-    <div class="msub">小红书聚光的 auth_code 是<b>一次性</b>的，有效期只有几分钟，所以拿到后要立刻提交。<br>
-    流程：点「打开授权页」→ 登录并确认授权 → 复制跳转后的地址栏 → 粘贴到下方提交。换 token、验证、入库全自动。</div>
+    <div class="msub">演示模式：仅展示虚构账号的授权状态，不包含真实凭证。</div>
 
     <h4>账号授权总览 <span class="chip" id="accSum">读取中…</span></h4>
     <div class="hint" style="margin:-4px 0 7px">同一城市有多个小红书账号时，用「·后缀」区分（主号 / 婚纱照 / 直营店 / 婚前影像…）。<br>
     每个主体都是一个<b>独立的小红书账号</b> —— 用 A 号授权不会顺带覆盖 B 号，必须各自登录授权。</div>
     <div id="accList"><div class="hint">正在读取账号库…</div></div>
 
-    <h4>提交授权</h4>
-    <div class="steps">
-      <b>1</b>　点下方「打开授权页」<br>
-      <b>2</b>　用对应的小红书账号登录（短信验证码）→ 点「确认授权」<br>
-      <b>3</b>　页面跳到 httpbin.org 后，<b>立刻 Ctrl+A 全选地址栏并复制</b><br>
-      <b>4</b>　粘贴到下面，点「提交授权」
-    </div>
-    <div class="auth-actions">
-      <a class="pend-go" id="authLink" href="#" target="_blank" rel="noopener">打开授权页 ↗</a>
-      <button class="rbtn" id="btnCopyUrl">复制授权链接</button>
-    </div>
-    <textarea class="auth-input" id="authCode" placeholder="把整条回调地址粘进来即可（形如 https://httpbin.org/get?auth_code=xxx&state=abcd），也可以只粘 auth_code"></textarea>
-    <div class="auth-actions">
-      <button class="btn-primary" id="btnSubmitAuth">提交授权</button>
-      <button class="btn-ghost" id="btnCloseAuth">关闭</button>
-    </div>
+    <div class="steps">演示模式：真实授权及凭证录入已禁用，请勿输入真实 Token、授权码或密码。</div>
+    <div class="auth-actions"><button class="btn-ghost" id="btnCloseAuth">关闭</button></div>
     <div id="authResult"></div>
   </div>
 </div>
@@ -2045,7 +2021,7 @@ if(bp)bp.addEventListener('click',function(){{
 var br=document.getElementById('btnRefresh');
 if(br)br.addEventListener('click',function(){{
   var b=this; b.disabled=true; b.textContent='↻ 拉取中…';
-  toast('正在从聚光拉取最新数据，请稍候…');
+  toast('正在重新载入本地演示数据…');
   fetch('/api/refresh').then(function(r){{return r.json()}}).then(function(d){{
     if(!d.ok){{ toast('刷新失败：'+(d.error||'未知错误'),'err'); return; }}
     if(d.queued){{ toast('已有刷新在进行，排队等待…'); waitForRefresh(40); }}
@@ -2060,7 +2036,7 @@ var fb=document.getElementById('fabAuth');
 function openModal(){{ if(modal)modal.classList.add('show'); loadAccounts(); }}
 function closeModal(){{ if(modal)modal.classList.remove('show'); }}
 if(fb)fb.addEventListener('click',function(){{
-  if(!LIVE){{ toast('离线查看模式：授权功能请通过服务地址访问','err'); return; }}
+  if(!LIVE){{ toast('演示模式：仅展示虚构账号的授权状态','err'); return; }}
   openModal();
 }});
 var bc=document.getElementById('btnCloseAuth');
@@ -2113,37 +2089,8 @@ function loadAccounts(){{
   }});
 }}
 
-var bs=document.getElementById('btnSubmitAuth');
-if(bs)bs.addEventListener('click',function(){{
-  var ta=document.getElementById('authCode');
-  var code=ta?ta.value.trim():'';
-  if(!code){{ toast('请先粘贴回调地址或 auth_code','err'); return; }}
-  var b=this; b.disabled=true; b.textContent='提交中…';
-  var box=document.getElementById('authResult');
-  if(box)box.innerHTML='';
-  fetch('/api/auth',{{method:'POST',headers:{{'Content-Type':'application/json'}},
-    body:JSON.stringify({{code:code}})}})
-  .then(function(r){{return r.json()}})
-  .then(function(d){{
-    if(!box)return;
-    if(d.ok){{
-      var v=d.verified||{{}};
-      box.innerHTML='<div class="res-ok" style="margin-top:12px"><b>✓ '+d.msg+'</b><br>'
-        +'主体：'+d.corp+'<br>账号库条目：'+d.key+'（'+d.match+'）<br>'
-        +'投放户 '+(d.advertisers||[]).length+' 个<br>'
-        +'数据验证：'+(v.ok?('通过，近 3 日取到 '+v.creatives+' 条素材')
-            :('未通过 '+(v.errors||[]).join('; ')))
-        +'<br><span style="opacity:.75">正在等待后台刷新完成，完成后页面会自动重载</span></div>';
-      toast('授权成功，等待数据刷新…','ok');
-      if(ta)ta.value='';
-      waitForRefresh(25);
-    }}else{{
-      box.innerHTML='<div class="res-err" style="margin-top:12px"><b>✗ 授权失败</b><br>'+d.msg+'</div>';
-      toast('授权失败','err');
-    }}
-  }}).catch(function(e){{
-    if(box)box.innerHTML='<div class="res-err" style="margin-top:12px"><b>✗ 请求失败</b><br>'+e+'</div>';
-  }}).then(function(){{ b.disabled=false; b.textContent='提交授权'; }});
+// 演示版不提供授权提交和复制链接。
+(function(){{ b.disabled=false; b.textContent='提交授权'; }});
 }});
 
 var bu=document.getElementById('btnCopyUrl');
@@ -2567,7 +2514,6 @@ def build_html_v2(snapshot, ranges=None, current_range="latest",
              + (f" · {auth['tok_bad']} 个 token 失效需重新授权" if auth.get("tok_bad") else ""))
             if auth else "—"),
         "__AUTH_ROWS__": _v2_auth_html(auth),
-        "__AUTH_URL__": _auth_url(),
         "__LAST_REFRESH__": ref,
         "__FOOTNOTE__": _v2_footnote(snapshot, len(mats), trend),
     }
@@ -2617,7 +2563,7 @@ def _kw_footnote(ksnap):
         "实测占账户口径 14.6%~96.7%，不可与账户/素材口径相加或对比",
         "筛选：按所选 城市 / 投放账号 / 小红书号 只聚合命中的广告主（重新汇总，不是只过滤表格行）；"
         "小红书号取该广告主的授权主体（关键词维度无笔记作者字段）",
-        "词标签来自「夏天_v6 推荐词库」的意图分类；库外词＝不在推荐词库内的投放词",
+        "词标签来自「示例_v6 推荐词库」的意图分类；库外词＝不在推荐词库内的投放词",
         f"区间 {rng.get('start')} ~ {rng.get('end')}（{cov.get('days', 0)} 天） · "
         f"{t.get('acct_n', 0)} 户有搜索词 · {t.get('kw_n', 0)} 个词",
         f"本地词库覆盖 {cov.get('first') or '—'} ~ {cov.get('last') or '—'}"
@@ -2655,7 +2601,6 @@ def build_keyword_html(ksnap, ranges=None, current_range="latest",
              + (f" · {a['tok_bad']} 个 token 失效需重新授权" if a.get("tok_bad") else ""))
             if a else "—"))(_v2_auth()),
         "__AUTH_ROWS__": _v2_auth_html(_v2_auth()),
-        "__AUTH_URL__": _auth_url(),
         "__LAST_REFRESH__": last_refresh or datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "__FOOTNOTE__": _kw_footnote(ksnap or {}),
     }
